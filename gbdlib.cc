@@ -17,39 +17,41 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef GBDHash_h
-#define GBDHash_h
+#include "Python.h"
+#include "GBDHash.h"
 
-#include "StreamBuffer2.h"
-#include "md5/md5.h"
-
-std::string gbd_hash_from_dimacs(const char* filename) {
-    unsigned char sig[MD5_SIZE];
-    char str[MD5_STRING_SIZE];
-    md5::md5_t md5;
-    StreamBuffer2 in(filename);
-    std::string clause("");
-    while (!in.eof()) {
-        in.skipWhitespace();
-        if (in.eof()) {
-            break;
-        }
-        if (*in == 'p' || *in == 'c') {
-            in.skipLine();
-        }
-        else {
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                clause.append(std::to_string(plit)); 
-                clause.append(" ");
-            }
-            clause.append("0");
-            md5.process(clause.c_str(), clause.length());
-            clause.assign(" ");
-        }
-    }
-    md5.finish(sig);
-    md5::sig_to_string(sig, str, sizeof(str));
-    return std::string(str);
+static PyObject* version(PyObject* self) {
+    return Py_BuildValue("i", 1);
 }
 
-#endif
+static PyObject* gbdhash(PyObject* self, PyObject* arg) {
+    const char* filename;
+
+    if (!PyArg_ParseTuple(arg, "s", &filename)) {
+        return NULL;
+    }
+
+    std::string result = gbd_hash_from_dimacs(filename);
+
+    PyMem_Free((void*)filename);
+
+    return Py_BuildValue("s", result.c_str());
+}
+
+static PyMethodDef myMethods[] = {
+    {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash of given DIMACS CNF file."},
+    {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef myModule = {
+    PyModuleDef_HEAD_INIT,
+    "gbdhashc",
+    "GBD-Hash Module",
+    -1,
+    myMethods
+};
+
+PyMODINIT_FUNC PyInit_gbdhashc(void) {
+    return PyModule_Create(&myModule);
+}
