@@ -22,8 +22,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <iostream>
 #include <limits>
-#include <archive.h>
-#include <archive_entry.h>
+#include <cstring>
+
+extern "C" {
+    #include <archive.h>
+    #include <archive_entry.h>
+}
 
 class ParserException : public std::exception {
 public:
@@ -57,6 +61,7 @@ class StreamBuffer {
             }
             end += archive_read_data(file, buffer + end, buffer_size - end);
             if (end < buffer_size) {
+                std::memset(buffer + end, 0, buffer_size - end);
                 end_of_file = true;
             } else {
                 while (!isspace(buffer[end-1])) {// align buffer with word-end
@@ -69,6 +74,8 @@ class StreamBuffer {
 public:
     StreamBuffer(const char* filename) : buffer_size(16384), pos(0), end(0), end_of_file(false) {
         file = archive_read_new();
+        //archive_read_support_filter_lzma(file);
+        //archive_read_support_filter_bzip2(file);
         archive_read_support_filter_all(file);
         archive_read_support_format_raw(file);
         int r = archive_read_open_filename(file, filename, buffer_size);

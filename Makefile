@@ -1,7 +1,10 @@
-all: gbdhash pymod
+all: gbdhashstatic pymod
 
 gbdhash: Main.cc StreamBuffer.h md5/md5.cpp md5/md5.h md5/md5_loc.h
 	g++ -o gbdhash Main.cc md5/md5.cpp -larchive
+	
+gbdhashstatic: Main.cc StreamBuffer.h md5/md5.cpp md5/md5.h md5/md5_loc.h
+	g++ -o gbdhash Main.cc md5/md5.cpp -larchive -lz -lbz2 -llzma -llz4 -lzstd -static
 
 pymod: Main.cc StreamBuffer.h md5/md5.cpp md5/md5.h md5/md5_loc.h
 	python3 setup.py build
